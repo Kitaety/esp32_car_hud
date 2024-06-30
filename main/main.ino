@@ -1,5 +1,5 @@
 #include "MyAPServer.h"
-#include "secrets.h"
+#include "PreferencesManager.h"
 
 #ifndef LED_BUILTIN
 #define LED_BUILTIN 2
@@ -7,28 +7,40 @@
 
 bool turnLed = false;
 MyAPServer server;
+PreferencesManager prefsManager;
 
 void ServerStart(void *pvParamerters);
 void LedManage(void *pvParamerters);
 
 void setup() {
-  xTaskCreate(ServerStart, "ServerStart", 4096, NULL, 0, NULL);
-  xTaskCreate(LedManage, "LedManage", 2048, NULL, 0, NULL);
+  xTaskCreatePinnedToCore(ServerStart, "ServerStart", 4096, NULL, 0, NULL, 1);
+  xTaskCreatePinnedToCore(LedManage, "LedManage", 128, NULL, 0, NULL, 0);
 }
 
 void loop() {}
 
 void ServerStart(void *pvParamerters) {
-  server.config(SSID, PASSWORD, AP_LOCAL_IP);
+  JsonDocument wifiConfig = prefsManager.getWifiConfig();
 
-  server.get("/1", []() {
-    turnLed = true;
-    return "ON";
+  server.config(wifiConfig["ssid"], wifiConfig["password"]);
+
+  server.get("/led", []() {
+    JsonDocument body;
+    body["status"] = turnLed;
+    return body;
   });
 
-  server.get("/0", []() {
-    turnLed = false;
+  server.post("/led", [](JsonDocument body) {
+    turnLed = body["status"];
   });
+
+  server.get("/wifi", []() {
+    return prefsManager.getWifiConfig();
+  });
+
+  server.post("/wifi", [](JsonDocument body) {
+    prefsManager.updateWifiConfig(body["ssid"], body["password"]);
+  },[](){prefsManager.reboot();});
 
   server.start();
 }
