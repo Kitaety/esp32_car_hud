@@ -14,13 +14,15 @@ const int STATUS_OK = 200;
 class MyAPServer {
 private:
   WebServer _server;
+
 public:
   void config(const String &ssid, const String &password) {
     WiFi.softAPConfig(AP_LOCAL_IP, AP_GATEWAY_IP, AP_NETWORK_MASK);
 
     if (!WiFi.softAP(ssid, password, 1, 0, 1)) {
       log_e("Soft AP creation failed.");
-      while (1) {}
+      while (1) {
+      }
     }
   }
   void start() {
@@ -51,6 +53,6 @@ public:
   }
 
   void post(const Uri &uri, void (*callback)(JsonDocument)) {
-    post(uri, callback, [](){});
+    post(uri, callback, []() {});
   }
 };
