@@ -7,8 +7,7 @@
 //ESP32Time rtc;
 ESP32Time rtc(0);
 
-// //SDA -> MOSI
-// //SCL -> SCLK
+
 #define TFT_CS 5
 #define TFT_RST 21
 #define TFT_DC 4
@@ -22,7 +21,7 @@ ESP32Time rtc(0);
 bool turnLed = false;
 MyAPServer server;
 PreferencesManager prefsManager;
-Display display = Display(TFT_DC, TFT_RST, TFT_CS, TFT_MOSI, TFT_SCLK);
+Display display = Display();
 
 void ServerStart(void *pvParamerters);
 void LedManage(void *pvParamerters);
@@ -76,13 +75,13 @@ void LedManage(void *pvParamerters) {
 }
 
 void DisplayManage(void *pvParamerters) {
-  display.init(240, 320, 1);
+  display.init(1);
   display.clear();
 
   bool a = true;
   uint16_t i = 0;
   for (;;) {
-    display.drawText(228, 5, rtc.getTime("%H:%M"), ST77XX_YELLOW);
+    display.drawText(228, 5, rtc.getTime("%H:%M"), CYAN);
     display.drawSpeedometer(i, i * 25);
     //display.drawSpeedometer(i % 2 == 0 ? 250 : 280, 0);
     
