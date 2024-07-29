@@ -1,5 +1,5 @@
-#include <TFT_eSPI.h>
 #include "Arduino.h"
+#include "My_TFT_eSPI.h"
 
 #define BLACK TFT_BLACK
 #define WHITE TFT_WHITE
@@ -33,8 +33,6 @@ class Display {
     void drawSpeedometer(uint16_t speed, uint16_t rpm);
     void clear();
   private:
-    void fillArc(int x, int y, int start_angle, int seg_count, int rx, int ry, int w, uint color);
-
     void drawSpeedometerSpeedIndicators();
     void drawSpeedometerSpeedText(uint16_t speed, uint color);
     void drawSpeedometerArrow(uint16_t speed);

@@ -83,7 +83,6 @@ void DisplayManage(void *pvParamerters) {
   for (;;) {
     display.drawText(228, 5, rtc.getTime("%H:%M"), CYAN);
     display.drawSpeedometer(i, i * 25);
-    //display.drawSpeedometer(i % 2 == 0 ? 250 : 280, 0);
     
     if (i == 0) {
       a = true;
