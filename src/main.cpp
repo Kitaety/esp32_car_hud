@@ -6,12 +6,6 @@
 #include <TFT_eSPI.h>
 #include <SpeedometerWidget.h>
 
-// #include "data/NotoSansBold15.h"
-// #include "data/NotoSansBold36.h"
-
-// #define AA_FONT_SMALL NotoSansBold15
-// #define AA_FONT_LARGE NotoSansBold36
-
 #define SPEEDOMETER_POSITION_X 10
 #define SPEEDOMETER_POSITION_Y 10
 #define SPEEDOMETER_RADIUS 90
@@ -34,14 +28,7 @@ void setup()
 {
 	tft.init();
 	tft.setRotation(1);
-
-	// TODO Add TrueType Font
-	// tft.loadFont(AA_FONT_LARGE);
-
 	tft.fillScreen(TFT_BLACK);
-
-	tft.setCursor(200, 10);
-	tft.print("test");
 
 	speedometerWidget.init(SPEEDOMETER_POSITION_X, SPEEDOMETER_POSITION_Y, SPEEDOMETER_RADIUS);
 
@@ -105,7 +92,7 @@ void DisplayManage(void *pvParamerters)
 	{
 		// display.drawText(228, 5, rtc.getTime("%H:%M"), CYAN);
 		// display.drawSpeedometer(i, i * 25);
-		speedometerWidget.update(i);
+		speedometerWidget.update(i, i * 25);
 
 		if (i == 0)
 		{
