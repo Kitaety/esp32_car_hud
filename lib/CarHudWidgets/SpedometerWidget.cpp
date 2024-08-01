@@ -23,6 +23,9 @@
 #define SPEED_TEXT_AREA_WIDTH CHAR_WIDTH_SIZE_3 * 3
 #define SPEED_TEXT_AREA_HEIGHT CHAR_HEIGHT_SIZE_3
 
+#define RPM_TEXT_AREA_WIDTH CHAR_WIDTH_SIZE_3 * 4
+#define RPM_TEXT_AREA_HEIGHT CHAR_HEIGHT_SIZE_2
+
 #define ARROW_WIDTH 15
 
 int warningSpeedSegment[3] = {2, 3, 6};
@@ -92,6 +95,7 @@ void SpeedometerWidget::updateRpm(uint16_t rpm)
 {
 	uint16_t truncatedRpm = rpm % (RPM_MAX_VALUE + 1);
 	drawRpmArrow(truncatedRpm);
+	drawRpmText(truncatedRpm);
 }
 
 void SpeedometerWidget::drawSpeedIndicators()
@@ -185,6 +189,16 @@ void SpeedometerWidget::drawRpmArrow(uint16_t rpm)
 
 	drawArc(_xCenter, _yCenter, _rpmArrowRadius, ARROW_WIDTH, _startRpmArrowAngle, _rpmAngle, isUp ? getRpmColor(rpm) : TFT_BLACK);
 	_oldRpmArrowAngle = _rpmArrowAngle;
+}
+
+void SpeedometerWidget::drawRpmText(uint16_t rpm)
+{
+	String rpmString = String(rpm);
+	uint16_t _rpmdTextPositionY = _speedTextKmPerHPositionY + CHAR_HEIGHT_SIZE_3 + 10;
+	uint16_t _rpmTextPositionX = _xCenter - (rpmString.length() * CHAR_WIDTH_SIZE_2) / 2;
+
+	_tft->fillRect(_xCenter - RPM_TEXT_AREA_WIDTH / 2, _rpmdTextPositionY, RPM_TEXT_AREA_WIDTH, RPM_TEXT_AREA_HEIGHT, TFT_BLACK);
+	drawText(_rpmTextPositionX, _rpmdTextPositionY, rpmString, _textColor, 2);
 }
 
 void SpeedometerWidget::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t w, int16_t startAngle, int16_t arcAngle, uint16_t color, bool smooth)

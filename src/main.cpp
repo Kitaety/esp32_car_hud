@@ -83,9 +83,6 @@ void LedManage(void *pvParamerters)
 
 void DisplayManage(void *pvParamerters)
 {
-	// display.init(1);
-	// display.clear();
-
 	bool a = true;
 	uint16_t i = 0;
 	for (;;)

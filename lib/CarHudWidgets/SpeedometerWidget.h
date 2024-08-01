@@ -13,6 +13,7 @@ private:
 	void updateRpm(uint16_t rpm);
 	void drawSpeedIndicators();
 	void drawRpmArrow(uint16_t rpm);
+	void drawRpmText(uint16_t rpm);
 	void drawSpeedText(uint16_t speed);
 	void drawSpeedArrow(uint16_t speed);
 	void drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t w, int16_t startAngle, int16_t arcAngle, uint16_t color, bool smooth = true);
