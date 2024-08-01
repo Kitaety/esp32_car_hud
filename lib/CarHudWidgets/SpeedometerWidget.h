@@ -12,7 +12,6 @@ private:
 	void updateSpeed(uint16_t speed);
 	void updateRpm(uint16_t rpm);
 	void drawSpeedIndicators();
-	void drawRpmIndicators();
 	void drawRpmArrow(uint16_t rpm);
 	void drawSpeedText(uint16_t speed);
 	void drawSpeedArrow(uint16_t speed);
@@ -23,17 +22,20 @@ private:
 	uint16_t _x,
 		_y,
 		_r,
+		_xCenter,
+		_yCenter,
 		_textColor,
 		_indicatorColor;
 
-	uint16_t _xSpeedCenter,
-		_ySpeedCenter,
+	uint16_t
 		_measurementScaleColor,
 		_warningSpeedValueColor,
-		_speedSpeedArrowAngle = 0,
+		_speedArrowRadius = 0,
+		_speedArrowAngle = 0,
 		_oldSpeedArrowAngle = 0,
 		_startSpeedAngle = 0,
-		_speedAngle = 0;
+		_speedAngle = 0,
+		_speedIndicatorRadius = 0;
 
 	uint16_t
 		_speedTextAreaX,
@@ -44,8 +46,9 @@ private:
 
 	uint16_t _xRpm,
 		_yRpm,
-		_rpmWidth,
-		_rpmHeight,
-		_rpmValue = 0,
-		_oldRpmValue = 0;
+		_rpmArrowRadius = 0,
+		_startRpmArrowAngle = 0,
+		_rpmAngle = 0,
+		_rpmArrowAngle = 0,
+		_oldRpmArrowAngle = 0;
 };

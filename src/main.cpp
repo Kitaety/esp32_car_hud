@@ -90,9 +90,7 @@ void DisplayManage(void *pvParamerters)
 	uint16_t i = 0;
 	for (;;)
 	{
-		// display.drawText(228, 5, rtc.getTime("%H:%M"), CYAN);
-		// display.drawSpeedometer(i, i * 25);
-		speedometerWidget.update(i, i * 25);
+		speedometerWidget.update(i, i * 26);
 
 		if (i == 0)
 		{

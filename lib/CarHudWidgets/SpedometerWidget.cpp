@@ -2,9 +2,12 @@
 
 #define SPEED_MAX_VALUE 300
 #define RPM_MAX_VALUE 8000
+#define RPM_MAX_GREEN_ZONE_VALUE 2500
+#define RPM_MAX_YELLOW_ZONE_VALUE 5000
+#define RPM_MAX_VALUE 8000
 
-#define SPEED_ARC_ANGLE 270
-#define SPEED_START_ANGLE 45
+#define ARC_ANGLE 270
+#define ARC_START_ANGLE 45
 #define SPEED_ARC_WIDTH 2
 
 #define SPEED_SEGMENT_COUNT 16
@@ -20,9 +23,22 @@
 #define SPEED_TEXT_AREA_WIDTH CHAR_WIDTH_SIZE_3 * 3
 #define SPEED_TEXT_AREA_HEIGHT CHAR_HEIGHT_SIZE_3
 
-#define SPEED_ARROW_WIDTH 15
+#define ARROW_WIDTH 15
 
 int warningSpeedSegment[3] = {2, 3, 6};
+
+uint16_t getRpmColor(uint16_t rpm)
+{
+	if (rpm <= RPM_MAX_GREEN_ZONE_VALUE)
+	{
+		return TFT_GREEN;
+	}
+	if (rpm > RPM_MAX_GREEN_ZONE_VALUE && rpm <= RPM_MAX_YELLOW_ZONE_VALUE)
+	{
+		return TFT_YELLOW;
+	}
+	return TFT_RED;
+}
 
 SpeedometerWidget::SpeedometerWidget(TFT_eSPI *tft)
 {
@@ -37,21 +53,23 @@ void SpeedometerWidget::init(uint16_t x, uint16_t y, uint16_t r, uint16_t measur
 	_r = r;
 	_textColor = textColor;
 
-	_xSpeedCenter = _x + _r;
-	_ySpeedCenter = _y + _r;
+	_xCenter = _x + _r;
+	_yCenter = _y + _r;
+
+	_speedIndicatorRadius = _r - SPEED_ARC_WIDTH;
 
 	_measurementScaleColor = measurementScaleColor;
 	_indicatorColor = indicatorColor;
 	_warningSpeedValueColor = warningSpeedValueColor;
 
-	_speedTextKmPerHPositionX = _xSpeedCenter - 2 * CHAR_WIDTH_SIZE_2;
-	_speedTextKmPerHPositionY = _ySpeedCenter + CHAR_HEIGHT_SIZE_2;
+	_speedArrowRadius = _r - SPEED_ARC_WIDTH - SPEED_SEGMENT_WIDTH - 2;
+	_speedTextKmPerHPositionX = _xCenter - 2 * CHAR_WIDTH_SIZE_2;
+	_speedTextKmPerHPositionY = _yCenter + CHAR_HEIGHT_SIZE_2;
 	_speedTextKmPositionY = _speedTextKmPerHPositionY - 5 - CHAR_HEIGHT_SIZE_3;
 
+	_rpmArrowRadius = _r - SPEED_ARC_WIDTH - SPEED_SEGMENT_WIDTH - ARROW_WIDTH - 4;
 	_xRpm = _x;
 	_yRpm = _r * 2 + 2;
-	_rpmHeight = _r / 4;
-	_rpmWidth = _r * 2;
 }
 
 void SpeedometerWidget::update(int16_t speed, uint16_t rpm)
@@ -64,7 +82,7 @@ void SpeedometerWidget::updateSpeed(uint16_t speed)
 {
 	uint16_t truncatedSpeed = speed % (SPEED_MAX_VALUE + 1);
 
-	drawArc(_xSpeedCenter, _ySpeedCenter, _r, SPEED_ARC_WIDTH, SPEED_START_ANGLE, SPEED_ARC_ANGLE, _measurementScaleColor);
+	drawArc(_xCenter, _yCenter, _r, SPEED_ARC_WIDTH, ARC_START_ANGLE, ARC_ANGLE, _measurementScaleColor);
 	drawSpeedIndicators();
 	drawSpeedArrow(truncatedSpeed);
 	drawSpeedText(truncatedSpeed);
@@ -73,8 +91,6 @@ void SpeedometerWidget::updateSpeed(uint16_t speed)
 void SpeedometerWidget::updateRpm(uint16_t rpm)
 {
 	uint16_t truncatedRpm = rpm % (RPM_MAX_VALUE + 1);
-
-	// drawRpmIndicators();
 	drawRpmArrow(truncatedRpm);
 }
 
@@ -82,7 +98,6 @@ void SpeedometerWidget::drawSpeedIndicators()
 {
 	int currentWarningSpeedSegment = 0;
 	uint16_t colorSpeedSegment = 0;
-	int8_t radius = _r - SPEED_ARC_WIDTH;
 
 	for (int i = 0; i < SPEED_SEGMENT_COUNT; i++)
 	{
@@ -96,7 +111,7 @@ void SpeedometerWidget::drawSpeedIndicators()
 			colorSpeedSegment = _measurementScaleColor;
 		}
 
-		int angle = (SPEED_START_ANGLE + (i * SPEED_SEGMENT_ANGLE_SPLIT)) % 360;
+		int angle = (ARC_START_ANGLE + (i * SPEED_SEGMENT_ANGLE_SPLIT)) % 360;
 
 		if (i == SPEED_SEGMENT_COUNT - 1)
 		{
@@ -107,7 +122,7 @@ void SpeedometerWidget::drawSpeedIndicators()
 			angle -= SPEED_SEGMENT_ANGLE / 2;
 		}
 
-		drawArc(_xSpeedCenter, _ySpeedCenter, radius, SPEED_SEGMENT_WIDTH, angle, SPEED_SEGMENT_ANGLE, colorSpeedSegment);
+		drawArc(_xCenter, _yCenter, _speedIndicatorRadius, SPEED_SEGMENT_WIDTH, angle, SPEED_SEGMENT_ANGLE, colorSpeedSegment);
 	}
 }
 
@@ -115,54 +130,61 @@ void SpeedometerWidget::drawSpeedText(uint16_t speed)
 {
 	String speedString = String(speed);
 
-	uint16_t speedTextKmPositionX = _xSpeedCenter - (speedString.length() * CHAR_WIDTH_SIZE_3) / 2;
+	uint16_t speedTextKmPositionX = _xCenter - (speedString.length() * CHAR_WIDTH_SIZE_3) / 2;
 
-	_tft->fillRect(_xSpeedCenter - SPEED_TEXT_AREA_WIDTH / 2, _speedTextKmPositionY, SPEED_TEXT_AREA_WIDTH, SPEED_TEXT_AREA_HEIGHT, TFT_BLACK);
+	_tft->fillRect(_xCenter - SPEED_TEXT_AREA_WIDTH / 2, _speedTextKmPositionY, SPEED_TEXT_AREA_WIDTH, SPEED_TEXT_AREA_HEIGHT, TFT_BLACK);
 	drawText(speedTextKmPositionX, _speedTextKmPositionY, speedString, _textColor, 3);
 	drawText(_speedTextKmPerHPositionX, _speedTextKmPerHPositionY, "KM/H", _textColor, 2);
 }
 
 void SpeedometerWidget::drawSpeedArrow(uint16_t speed)
 {
-	_speedSpeedArrowAngle = SPEED_ARC_ANGLE * speed / SPEED_MAX_VALUE;
-	_startSpeedAngle = SPEED_START_ANGLE;
+	_speedArrowAngle = ARC_ANGLE * speed / SPEED_MAX_VALUE;
+	_startSpeedAngle = ARC_START_ANGLE;
 	_speedAngle = 1;
 	bool isUp = true;
 
-	if (_oldSpeedArrowAngle > _speedSpeedArrowAngle)
+	if (_oldSpeedArrowAngle > _speedArrowAngle)
 	{
-		// draw down speed
-		_startSpeedAngle += _speedSpeedArrowAngle;
-		_speedAngle = _oldSpeedArrowAngle - _speedSpeedArrowAngle;
+		// draw down
+		_startSpeedAngle += _speedArrowAngle;
+		_speedAngle = _oldSpeedArrowAngle - _speedArrowAngle;
 		isUp = false;
 	}
-	else if (_speedSpeedArrowAngle > _oldSpeedArrowAngle)
+	else if (_speedArrowAngle > _oldSpeedArrowAngle)
 	{
-		// draw up speed
+		// draw up
 		_startSpeedAngle += _oldSpeedArrowAngle;
-		_speedAngle = _speedSpeedArrowAngle - _oldSpeedArrowAngle;
+		_speedAngle = _speedArrowAngle - _oldSpeedArrowAngle;
 	}
 
-	drawArc(_xSpeedCenter, _ySpeedCenter, _r - SPEED_ARC_WIDTH - SPEED_SEGMENT_WIDTH - 2, SPEED_ARROW_WIDTH, _startSpeedAngle, _speedAngle, isUp ? _indicatorColor : TFT_BLACK);
-	_oldSpeedArrowAngle = _speedSpeedArrowAngle;
+	drawArc(_xCenter, _yCenter, _speedArrowRadius, ARROW_WIDTH, _startSpeedAngle, _speedAngle, isUp ? _indicatorColor : TFT_BLACK);
+	_oldSpeedArrowAngle = _speedArrowAngle;
 }
 
-void SpeedometerWidget::drawRpmIndicators()
-{
-	_tft->fillRect(_xRpm, _yRpm, _rpmWidth, 3, _measurementScaleColor);
-	uint16_t step = _rpmWidth / RPM_INDICATOR_COUNT;
-	for (int i = 0; i < RPM_INDICATOR_COUNT + 1; i++)
-	{
-		uint16_t x = _xRpm + step * i;
-		_tft->fillRect(x, _yRpm + 2, 2, 5, _measurementScaleColor);
-	}
-}
 void SpeedometerWidget::drawRpmArrow(uint16_t rpm)
 {
-	uint16_t radius = _r - SPEED_ARC_WIDTH - SPEED_SEGMENT_WIDTH - SPEED_ARROW_WIDTH - 4;
-	uint16_t angle = SPEED_ARC_ANGLE * (rpm * 100 / RPM_MAX_VALUE) * 100;
-	drawArc(_xSpeedCenter, _ySpeedCenter, radius, SPEED_ARROW_WIDTH, SPEED_START_ANGLE, angle, TFT_GREEN);
-	// _tft->fillRect(_xRpm, _yRpm + 8, _rpmWidth, _rpmHeight, TFT_GREEN);
+	_rpmArrowAngle = ARC_ANGLE * rpm / RPM_MAX_VALUE;
+	_startRpmArrowAngle = ARC_START_ANGLE;
+	_rpmAngle = 1;
+	bool isUp = true;
+
+	if (_oldRpmArrowAngle > _rpmArrowAngle)
+	{
+		// draw down
+		_startRpmArrowAngle += _rpmArrowAngle;
+		_rpmAngle = _oldRpmArrowAngle - _rpmArrowAngle;
+		isUp = false;
+	}
+	else if (_rpmArrowAngle > _oldRpmArrowAngle)
+	{
+		// draw up
+		_startRpmArrowAngle += _oldRpmArrowAngle;
+		_rpmAngle = _rpmArrowAngle - _oldRpmArrowAngle;
+	}
+
+	drawArc(_xCenter, _yCenter, _rpmArrowRadius, ARROW_WIDTH, _startRpmArrowAngle, _rpmAngle, isUp ? getRpmColor(rpm) : TFT_BLACK);
+	_oldRpmArrowAngle = _rpmArrowAngle;
 }
 
 void SpeedometerWidget::drawArc(uint16_t x, uint16_t y, uint16_t r, uint16_t w, int16_t startAngle, int16_t arcAngle, uint16_t color, bool smooth)
