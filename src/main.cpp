@@ -1,113 +1,102 @@
 #include <Arduino.h>
-#include <ESP32Time.h>
+#include <BatteryVoltageWidget.h>
+#include <LoadingIndicator.h>
+#include <OBDIIManager.h>
+#include <SpeedometerWidget.h>
+#include <TFT_eSPI.h>
+
 #include "MyAPServer.h"
 #include "PreferencesManager.h"
-
-#include <TFT_eSPI.h>
-#include <SpeedometerWidget.h>
 
 #define SPEEDOMETER_POSITION_X 10
 #define SPEEDOMETER_POSITION_Y 10
 #define SPEEDOMETER_RADIUS 90
 
-// ESP32Time rtc;
-ESP32Time rtc(0);
+const char *mac = "41:50:05:05:88:2A";
 
-bool turnLed = false;
 MyAPServer server;
 PreferencesManager prefsManager;
 
 TFT_eSPI tft = TFT_eSPI();
 SpeedometerWidget speedometerWidget = SpeedometerWidget(&tft);
+BatteryVoltageWidget batteryVoltageWidget = BatteryVoltageWidget(&tft);
 
-void ServerStart(void *pvParamerters);
-void LedManage(void *pvParamerters);
-void DisplayManage(void *pvParamerters);
+void loading(void *pvParamerters);
+void serverStart(void *pvParamerters);
+void displayManage(void *pvParamerters);
+void updateOBDIIData(void *pvParamerters);
 
-void setup()
-{
-	tft.init();
-	tft.setRotation(1);
-	tft.fillScreen(TFT_BLACK);
+OBDIIManager obd2Manger;
 
-	speedometerWidget.init(SPEEDOMETER_POSITION_X, SPEEDOMETER_POSITION_Y, SPEEDOMETER_RADIUS);
+TaskHandle_t updateOBDIIDataTask;
 
-	xTaskCreatePinnedToCore(ServerStart, "ServerStart", 4096, NULL, 0, NULL, 1);
-	xTaskCreatePinnedToCore(LedManage, "LedManage", 1024, NULL, 0, NULL, 0);
-	xTaskCreatePinnedToCore(DisplayManage, "DisplayManage", 8192, NULL, 0, NULL, 0);
+void startUpdateOBDIIDataTask() {
+    xTaskCreatePinnedToCore(updateOBDIIData, "updateOBDIIData", 4096, NULL, 0, &updateOBDIIDataTask, 0);
 }
 
-void loop()
-{
+void setup() {
+    Serial.begin(115200);
+    tft.init();
+    tft.setRotation(1);
+    tft.fillScreen(TFT_BLACK);
+
+    TaskHandle_t loadingTask;
+    xTaskCreatePinnedToCore(loading, "loading", 8192, NULL, 0, &loadingTask, 0);
+    vTaskDelete(loadingTask);
+    tft.fillScreen(TFT_BLACK);
+    speedometerWidget.init(SPEEDOMETER_POSITION_X, SPEEDOMETER_POSITION_Y, SPEEDOMETER_RADIUS);
+    batteryVoltageWidget.init(200, 10);
+
+    xTaskCreatePinnedToCore(serverStart, "serverStart", 4096, NULL, 0, NULL, 1);
+    xTaskCreatePinnedToCore(displayManage, "displayManage", 8192, NULL, 0, NULL, 0);
+    startUpdateOBDIIDataTask();
 }
 
-void ServerStart(void *pvParamerters)
-{
-	JsonDocument wifiConfig = prefsManager.getWifiConfig();
+void loop() {}
 
-	server.config(wifiConfig["ssid"], wifiConfig["password"]);
-
-	server.get("/led", []()
-			   {
-    JsonDocument body;
-    body["status"] = turnLed;
-    return body; });
-
-	server.post("/led", [](JsonDocument body)
-				{ turnLed = body["status"]; });
-
-	server.get("/wifi", []()
-			   { return prefsManager.getWifiConfig(); });
-
-	server.post(
-		"/wifi", [](JsonDocument body)
-		{ prefsManager.updateWifiConfig(body["ssid"], body["password"]); },
-		[]()
-		{
-			prefsManager.reboot();
-		});
-
-	server.start();
+void loading(void *pvParamerters) {
+    LoadingIndicator indicator = LoadingIndicator(&tft);
+    indicator.init(100, 60, 60, 5);
+    while (true) {
+        indicator.update();
+        vTaskDelay(50);
+    }
 }
 
-void LedManage(void *pvParamerters)
-{
-	pinMode(LED_BUILTIN, OUTPUT);
+void serverStart(void *pvParamerters) {
+    JsonDocument wifiConfig = prefsManager.getWifiConfig();
 
-	for (;;)
-	{
-		digitalWrite(LED_BUILTIN, turnLed);
-		vTaskDelay(500);
-	}
+    server.config(wifiConfig["ssid"], wifiConfig["password"]);
+
+    server.get("/wifi", []() { return prefsManager.getWifiConfig(); });
+
+    server.post(
+        "/wifi",
+        [](JsonDocument body) {
+            prefsManager.updateWifiConfig(body["ssid"], body["password"]);
+        },
+        []() { prefsManager.reboot(); });
+
+    server.start();
 }
 
-void DisplayManage(void *pvParamerters)
-{
-	bool a = true;
-	uint16_t i = 0;
-	for (;;)
-	{
-		speedometerWidget.update(i, i * 26);
+void displayManage(void *pvParamerters) {
+    while (true) {
+        speedometerWidget.update(obd2Manger.speed, obd2Manger.rpm);
+        batteryVoltageWidget.update(obd2Manger.batteryVoltage);
+        vTaskDelay(1);
+    }
+}
 
-		if (i == 0)
-		{
-			a = true;
-		}
-		if (i == 300)
-		{
-			i = 200;
-			a = false;
-		}
+void updateOBDIIData(void *pvParamerters) {
+    BTAddress address = BTAddress(mac);
 
-		if (a)
-		{
-			i++;
-		}
-		else
-		{
-			i--;
-		}
+    if (!obd2Manger.connect(mac)) {
+        vTaskDelete(updateOBDIIDataTask);
+    }
 
-		vTaskDelay(5);
-	}
+    while (true) {
+        obd2Manger.update();
+        vTaskDelay(1);
+    }
 }
