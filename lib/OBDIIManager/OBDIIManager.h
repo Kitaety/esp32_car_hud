@@ -11,6 +11,7 @@ typedef enum {
 
 class OBDIIManager {
    public:
+    OBDIIManager(ELM327& elm327, BluetoothSerial& bt);
     bool connect(const char* mac);
     void update();
     int32_t speed = 0,
@@ -21,5 +22,6 @@ class OBDIIManager {
    private:
     const char* _macAddress;
     ELM327* _elm327;
-    ObdPidStates _obdState;
+    BluetoothSerial* _bt;
+    ObdPidStates _obdState = ENG_RPM;
 };

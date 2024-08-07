@@ -1,22 +1,25 @@
 #include "OBDIIManager.h"
 
+OBDIIManager::OBDIIManager(ELM327& elm327, BluetoothSerial& bt) {
+    _elm327 = &elm327;
+    _bt = &bt;
+    _obdState = ENG_RPM;
+}
+
 bool OBDIIManager::connect(const char* mac) {
-    BluetoothSerial serialBT = BluetoothSerial();
-    serialBT.begin("ArduHUD", true);
-    serialBT.setPin("1234");
+    _bt->begin("ArduHUD", true);
+    _bt->setPin("1234");
 
     BTAddress address = BTAddress(mac);
 
-    if (!serialBT.connect(address)) {
+    if (!_bt->connect(address)) {
         Serial.println("Error BT Phase 1");
         connected = false;
-        serialBT.end();
         return false;
     }
-    if (!_elm327->begin(serialBT, false, 2000)) {
+    if (!_elm327->begin(*_bt, false, 2000)) {
         Serial.println("Error BT Phase 2");
         connected = false;
-        serialBT.end();
         return false;
     }
 

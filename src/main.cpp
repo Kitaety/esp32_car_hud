@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <BatteryVoltageWidget.h>
+#include <ELMduino.h>
 #include <LoadingIndicator.h>
 #include <OBDIIManager.h>
 #include <SpeedometerWidget.h>
@@ -26,7 +27,9 @@ void serverStart(void *pvParamerters);
 void displayManage(void *pvParamerters);
 void updateOBDIIData(void *pvParamerters);
 
-OBDIIManager obd2Manger;
+ELM327 elm327;
+BluetoothSerial bt;
+OBDIIManager obd2Manger = OBDIIManager(elm327, bt);
 
 TaskHandle_t updateOBDIIDataTask;
 
@@ -89,8 +92,6 @@ void displayManage(void *pvParamerters) {
 }
 
 void updateOBDIIData(void *pvParamerters) {
-    BTAddress address = BTAddress(mac);
-
     if (!obd2Manger.connect(mac)) {
         vTaskDelete(updateOBDIIDataTask);
     }
