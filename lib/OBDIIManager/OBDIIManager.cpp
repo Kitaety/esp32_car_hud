@@ -61,14 +61,43 @@ void OBDIIManager::update() {
             break;
         }
         case BATTERY_VOLTAGE: {
-            double _batteryVoltage = _elm327->batteryVoltage();
+            float _batteryVoltage = _elm327->batteryVoltage();
 
             if (_elm327->nb_rx_state == ELM_SUCCESS) {
                 batteryVoltage = _batteryVoltage;
-                _obdState = ENG_RPM;
+                _obdState = FUEL_RATE;
             } else if (_elm327->nb_rx_state != ELM_GETTING_MSG) {
                 batteryVoltage = 0;
-                _obdState = BATTERY_VOLTAGE;
+                _obdState = FUEL_RATE;
+            }
+
+            break;
+        }
+        case FUEL_RATE: {
+            float _rate = _elm327->fuelRate();
+
+            if (_elm327->nb_rx_state == ELM_SUCCESS) {
+                fuelRate = _rate;
+                if(speed > 0) {
+                    fuelRatePer100km = fuelRate * 100 / speed;
+                }
+                _obdState = COOLANT_TEMPERATURE;
+            } else if (_elm327->nb_rx_state != ELM_GETTING_MSG) {
+                engineCoolantTemp = 0;
+                fuelRate = COOLANT_TEMPERATURE;
+            }
+
+            break;
+        }
+        case COOLANT_TEMPERATURE: {
+            float _temp = _elm327->engineCoolantTemp();
+
+            if (_elm327->nb_rx_state == ELM_SUCCESS) {
+                engineCoolantTemp = _temp;
+                _obdState = ENG_RPM;
+            } else if (_elm327->nb_rx_state != ELM_GETTING_MSG) {
+                engineCoolantTemp = 0;
+                _obdState = ENG_RPM;
             }
 
             break;

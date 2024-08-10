@@ -1,6 +1,7 @@
 #include <Arduino.h>
-#include <BatteryVoltageWidget.h>
+// #include <BatteryVoltageWidget.h>
 #include <ELMduino.h>
+#include <IndicatorWithIconWidget.h>
 #include <LoadingIndicator.h>
 #include <OBDIIManager.h>
 #include <SpeedometerWidget.h>
@@ -20,7 +21,9 @@ PreferencesManager prefsManager;
 
 TFT_eSPI tft = TFT_eSPI();
 SpeedometerWidget speedometerWidget = SpeedometerWidget(&tft);
-BatteryVoltageWidget batteryVoltageWidget = BatteryVoltageWidget(&tft);
+IndicatorWithIconWidget batteryVoltageWidget = IndicatorWithIconWidget(&tft, BATTERY_ICON);
+IndicatorWithIconWidget coolantTempertureWidget = IndicatorWithIconWidget(&tft, FUEL_ICON);
+IndicatorWithIconWidget fuelRateWidghet = IndicatorWithIconWidget(&tft, COOLANT_TEMPERATURE_ICON);
 
 void loading(void *pvParamerters);
 void serverStart(void *pvParamerters);
@@ -42,14 +45,16 @@ void setup() {
     tft.init();
     tft.setRotation(1);
     tft.fillScreen(TFT_BLACK);
-
     TaskHandle_t loadingTask;
     xTaskCreatePinnedToCore(loading, "loading", 8192, NULL, 0, &loadingTask, 0);
     vTaskDelete(loadingTask);
     tft.fillScreen(TFT_BLACK);
+    
     speedometerWidget.init(SPEEDOMETER_POSITION_X, SPEEDOMETER_POSITION_Y, SPEEDOMETER_RADIUS);
-    batteryVoltageWidget.init(200, 10);
-
+    batteryVoltageWidget.init(210, 10);
+    coolantTempertureWidget.init(210, 28);
+    fuelRateWidghet.init(210, 46);
+    
     xTaskCreatePinnedToCore(serverStart, "serverStart", 4096, NULL, 0, NULL, 1);
     xTaskCreatePinnedToCore(displayManage, "displayManage", 8192, NULL, 0, NULL, 0);
     startUpdateOBDIIDataTask();
@@ -87,6 +92,14 @@ void displayManage(void *pvParamerters) {
     while (true) {
         speedometerWidget.update(obd2Manger.speed, obd2Manger.rpm);
         batteryVoltageWidget.update(obd2Manger.batteryVoltage);
+        coolantTempertureWidget.update(obd2Manger.engineCoolantTemp);
+
+        if(obd2Manger.speed > 0) {
+            fuelRateWidghet.update(obd2Manger.fuelRatePer100km);
+        } else {
+            fuelRateWidghet.update(obd2Manger.fuelRate);
+        }
+
         vTaskDelay(1);
     }
 }

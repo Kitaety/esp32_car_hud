@@ -26,6 +26,10 @@ class SpeedometerWidget {
         _yCenter,
         _textColor,
         _indicatorColor;
+    uint16_t
+        _oldSpeed = 0,
+        _oldRpm = 0;
+    bool _firstUpdate = true;
 
     uint16_t
         _measurementScaleColor,

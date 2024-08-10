@@ -71,8 +71,14 @@ void SpeedometerWidget::init(uint16_t x, uint16_t y, uint16_t r, uint16_t measur
 }
 
 void SpeedometerWidget::update(int32_t speed, int32_t rpm) {
-    updateSpeed(speed);
-    updateRpm(rpm);
+    if (_oldSpeed != speed || _firstUpdate) {
+        updateSpeed(speed);
+        _oldSpeed = speed;
+    }
+    if (_oldRpm != rpm || _firstUpdate) {
+        updateRpm(rpm);
+        _oldRpm = rpm;
+    }
 }
 
 void SpeedometerWidget::updateSpeed(int32_t speed) {

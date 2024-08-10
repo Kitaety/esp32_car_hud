@@ -6,7 +6,9 @@
 typedef enum {
     ENG_RPM,
     SPEED,
-    BATTERY_VOLTAGE
+    BATTERY_VOLTAGE,
+    COOLANT_TEMPERATURE,
+    FUEL_RATE
 } ObdPidStates;
 
 class OBDIIManager {
@@ -16,7 +18,10 @@ class OBDIIManager {
     void update();
     int32_t speed = 0,
             rpm = 0;
-    double batteryVoltage = 0;
+    float batteryVoltage = 0,
+          engineCoolantTemp = 0,
+          fuelRatePer100km = 0,
+          fuelRate = 0;
     bool connected;
 
    private:
