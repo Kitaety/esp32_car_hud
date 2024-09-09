@@ -3,7 +3,6 @@
 
 typedef enum {
     BATTERY_ICON,
-    FUEL_ICON,
     COOLANT_TEMPERATURE_ICON
 } IndicatorIcon;
 
@@ -21,6 +20,7 @@ class IndicatorWithIconWidget {
 
    private:
     void drawIcon();
+    void drawText(String text);
     bool _firstUpdate = true;
     float _fValue = 0;
     uint32_t _i32Value = 0;

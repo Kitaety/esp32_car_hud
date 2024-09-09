@@ -14,17 +14,13 @@ bool OBDIIManager::connect(const char* mac) {
 
     if (!_bt->connect(address)) {
         Serial.println("Error BT Phase 1");
-        connected = false;
         return false;
     }
-    if (!_elm327->begin(*_bt, false, 2000)) {
+    if (!_elm327->begin(*_bt, true, 3000)) {
         Serial.println("Error BT Phase 2");
-        connected = false;
         return false;
     }
-
-    connected = true;
-
+   
     Serial.println("Connected to ELM327");
     _macAddress = mac;
 
@@ -46,10 +42,8 @@ void OBDIIManager::update() {
 
             break;
         }
-
         case SPEED: {
             int32_t _speed = _elm327->kph();
-
             if (_elm327->nb_rx_state == ELM_SUCCESS) {
                 speed = _speed;
                 _obdState = BATTERY_VOLTAGE;
@@ -65,26 +59,10 @@ void OBDIIManager::update() {
 
             if (_elm327->nb_rx_state == ELM_SUCCESS) {
                 batteryVoltage = _batteryVoltage;
-                _obdState = FUEL_RATE;
-            } else if (_elm327->nb_rx_state != ELM_GETTING_MSG) {
-                batteryVoltage = 0;
-                _obdState = FUEL_RATE;
-            }
-
-            break;
-        }
-        case FUEL_RATE: {
-            float _rate = _elm327->fuelRate();
-
-            if (_elm327->nb_rx_state == ELM_SUCCESS) {
-                fuelRate = _rate;
-                if(speed > 0) {
-                    fuelRatePer100km = fuelRate * 100 / speed;
-                }
                 _obdState = COOLANT_TEMPERATURE;
             } else if (_elm327->nb_rx_state != ELM_GETTING_MSG) {
-                engineCoolantTemp = 0;
-                fuelRate = COOLANT_TEMPERATURE;
+                batteryVoltage = 0;
+                _obdState = COOLANT_TEMPERATURE;
             }
 
             break;
